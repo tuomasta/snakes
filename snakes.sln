@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30114.105
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "snakes", "server\snakes.fsproj", "{A85F8BC0-A688-4A6B-9EDF-AF9EA7A2A372}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "client", "client\client.fsproj", "{DCA2A8B6-58B4-4B55-967B-0BAC7E0D6A6A}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "tests", "tests\tests.fsproj", "{10A161A4-B90F-4147-A195-BD91C02C18C9}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A85F8BC0-A688-4A6B-9EDF-AF9EA7A2A372}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A85F8BC0-A688-4A6B-9EDF-AF9EA7A2A372}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A85F8BC0-A688-4A6B-9EDF-AF9EA7A2A372}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A85F8BC0-A688-4A6B-9EDF-AF9EA7A2A372}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DCA2A8B6-58B4-4B55-967B-0BAC7E0D6A6A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DCA2A8B6-58B4-4B55-967B-0BAC7E0D6A6A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DCA2A8B6-58B4-4B55-967B-0BAC7E0D6A6A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DCA2A8B6-58B4-4B55-967B-0BAC7E0D6A6A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{10A161A4-B90F-4147-A195-BD91C02C18C9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{10A161A4-B90F-4147-A195-BD91C02C18C9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{10A161A4-B90F-4147-A195-BD91C02C18C9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{10A161A4-B90F-4147-A195-BD91C02C18C9}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
