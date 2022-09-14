@@ -10,6 +10,7 @@
     <ItemGroup>
         <Compile Include="Utils.fs"/>
         <Compile Include="GameTests.fs"/>
+        <Compile Include="RedisTests.fs"/>
         <Compile Include="Program.fs"/>
     </ItemGroup>
 

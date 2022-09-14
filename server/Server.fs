@@ -47,7 +47,7 @@ let indexHandler _ =
 
 let webApp: HttpHandler =
     choose [ GET
-             >=> choose [ route "/" >=> warbler indexHandler ]
+             >=> choose [ route "/api" >=> warbler indexHandler ]
              setStatusCode 404 >=> text "Not Found" ]
 
 // ---------------------------------

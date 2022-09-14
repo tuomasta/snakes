@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis-pod
+  template:
+    metadata:
+      labels:
+        app: redis-pod
+    spec:
+      containers:
+      - name: redis
+        image: redislabs/redismod
+#        args: ["--requirepass", "$(REDIS_PASS)"]
+        ports:
+        - containerPort: 6379
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+          limits:
+            cpu: 1000m
+            memory: 500Mi
+        env:
+        - name: MASTER
+          value: "true"
+        # - name: REDIS_PASS
+        #   valueFrom:
+        #     secretKeyRef:
+        #       name: redis
+        #       key: REDIS_PASS
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-clusterip-srv
+spec:
+  type: ClusterIP
+  selector:
+    app: redis-pod
+  ports:
+  - protocol: TCP
+    port: 6379
+    targetPort: 6379
+---
+# FOR LOCAL USAGE
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-loadbalancer-srv
+spec:
+  ports:
+  - port: 6379
+    protocol: TCP
+    targetPort: 6379
+  selector:
+    app: redis-pod
+  type: LoadBalancer
