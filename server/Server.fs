@@ -3,14 +3,18 @@ module Snakes.App
 open System
 
 open System.IO
+open System.Threading.Tasks
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Cors.Infrastructure
 open Microsoft.AspNetCore.Hosting
+open Microsoft.AspNetCore.Http
 open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
 open Microsoft.Extensions.DependencyInjection
 open Giraffe
 open GameHub
+open DataAccess.Redis
+open DataAccess.Game
 
 // ---------------------------------
 // Views
@@ -38,11 +42,16 @@ module Views =
                |> List.ofSeq) ]
         |> layout
 
+
+
 // ---------------------------------
 // Web app
 // ---------------------------------
+
 let indexHandler _ =
-    let view = Views.index State.Games.Keys
+    // TODO this should work async by using a task expression but does not seem to in the way it's documented
+    let gameNames = getRedisDb |> getGameNames |> Async.RunSynchronously
+    let view = Views.index gameNames
     htmlView view
 
 let webApp: HttpHandler =

@@ -3,7 +3,7 @@ module GameLogic
 open System
 open System.Numerics
 open Shared.Enums
-open Shared.Dtos
+open Shared.DTO
 
 type SetOfVectors = System.Collections.Generic.HashSet<Vector2>
 
@@ -24,8 +24,9 @@ let RotateRight =
 
 let RotateLeft =
     Matrix3x2.CreateRotation(float32 (Math.PI * -0.5))
-
-type Player(id: string, name: string, head: Vector2, direction: Vector2) =
+    
+// TODO OO type domain objects are not a thing in f#, so consider using plain records instead
+type Player (id: string, name: string, head: Vector2, direction: Vector2) =
     member this.id = id
     member this.name = name
     member val score = 0 with get, set
@@ -39,7 +40,7 @@ type Player(id: string, name: string, head: Vector2, direction: Vector2) =
 
     member this.tail = this.body[1..]
     member this.head: Vector2 = this.body.Head
-
+    
     member this.isAlive: bool =
         this.direction <> EmptyDirection
 
@@ -59,7 +60,7 @@ type Player(id: string, name: string, head: Vector2, direction: Vector2) =
         let newHead: Vector2 =
             this.head + this.direction
             |> fun h -> (limit h.X (Config.GameArea.width - 1), limit h.Y (Config.GameArea.height - 1))
-            |> fun (x, y) -> Vector2(x, y)
+            |> Vector2
 
         if shouldGrow newHead then
             this.score <- this.score + 1
@@ -68,17 +69,16 @@ type Player(id: string, name: string, head: Vector2, direction: Vector2) =
             this.body <- newHead :: this.body[.. this.body.Length - 2]
 
     member this.turn(turnTo: TurnDirection) =
-        let t =
+        let transformation =
             if turnTo = TurnDirection.left then
                 RotateLeft
             else
                 RotateRight
 
-        this.direction <- Vector2.Transform(this.direction, t)
+        this.direction <- Vector2.Transform(this.direction, transformation)
 
-type Game(id: string) =
-    member this.name = id
-
+type Game(name: string) =
+    member this.name = name
     member val status = GameStatus.Lobby with get, set
 
     member val players: Player list = [] with get, set
@@ -146,3 +146,20 @@ type Game(id: string) =
         ()
 
     member this.start() = this.status <- GameStatus.Running
+
+let toDto (game: Game) : GameDto =
+    let mapVector (v: Vector2) = { x = int v.X; y = int v.Y }
+    let mapPlayer (p: Player) : PlayerDto = {
+      name = p.name
+      body = p.body |> List.map mapVector
+      score = p.score
+      isAlive = p.isAlive
+    }
+
+    {
+      name = game.name
+      status = game.status
+      area = Config.GameArea
+      berries = game.berries |> List.map mapVector
+      players = game.players |> List.map mapPlayer
+    }

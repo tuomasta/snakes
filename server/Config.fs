@@ -1,6 +1,6 @@
 module Config
 
-open Shared.Dtos
+open Shared.DTO
 
 // TODO: use proper config file etc
 let GameArea = { width = 25; height = 25 }

@@ -4,7 +4,9 @@ open GameHub
 open Microsoft.AspNetCore.SignalR
 open Microsoft.Extensions.Hosting
 open Shared.Enums
-open State
+open DataAccess.Redis
+open DataAccess.Game
+open GameLogic
 open System.Threading
 
 type GameService(hubContext: IHubContext<GameHub, IClientApi>) =
@@ -13,28 +15,45 @@ type GameService(hubContext: IHubContext<GameHub, IClientApi>) =
     override this.ExecuteAsync(stoppingToken: CancellationToken) : Tasks.Task =
         task {
             while stoppingToken.IsCancellationRequested = false do
+
+                // todo could be optimized by not processing games in lobby state
+                let! gameNames = getRedisDb |> getGameNames
+
                 do!
-                    Games.Values
-                    |> Seq.filter (fun g -> g.status = GameStatus.Running)
-                    |> Seq.map (fun game ->
+                    gameNames
+                    |> Seq.map (fun gameName ->
                         async {
-                            game.tick ()
+                            let! game =
+                                getRedisDb
+                                |> tryGetGame gameName
+                                |> Async.mapAsync (Option.defaultWith (fun () -> gameName |> Game))
 
                             do!
-                                hubContext
-                                    .Clients
-                                    .Group(game.name)
-                                    .GameState(game |> getGameDto)
-                                |> Async.AwaitTask
+                                match game.status with
+                                | GameStatus.Running -> this.ProgressGame game
+                                | GameStatus.Ended -> this.RemoveGame game
+                                | _ -> async.Return ()
                         })
                     |> Async.Parallel
                     |> Async.Ignore
 
-                // clean up ended games
-                Games.Values
-                |> Seq.filter (fun g -> g.status = GameStatus.Ended)
-                |> Seq.iter (fun g -> Games.TryRemove(g.name) |> ignore)
-
                 // TODO: there is a better solution for this
                 do! Tasks.Task.Delay(100) |> Async.AwaitTask
         }
+
+    member this.ProgressGame(game: Game) : Async<unit> =
+        async {
+            game.tick ()
+
+            // TODO: save only the berries, status, player bodies and alive status to avoid conflicts
+            do! getRedisDb |> saveGame game |> Async.Ignore
+
+            do!
+                hubContext
+                    .Clients
+                    .Group(game.name)
+                    .GameState(game |> toDto)
+                |> Async.AwaitTask
+        }
+
+    member this.RemoveGame(game: Game) : Async<unit> = getRedisDb |> deleteGame game.name
