@@ -7,7 +7,7 @@ module Redis =
     open System.Text.Json
     open System.Text.Json.Serialization
 
-    let jsonOptions = JsonSerializerOptions()
+    let private jsonOptions = JsonSerializerOptions()
     jsonOptions.Converters.Add(JsonFSharpConverter())
 
     type SystemTextJsonSerializer() =
@@ -18,18 +18,22 @@ module Redis =
             member x.Serialize<'TObjectType> (obj : 'TObjectType) =
                 JsonSerializer.Serialize(obj, jsonOptions)
 
-
+    let private serializer : ISerializerProxy = SystemTextJsonSerializer()
     let private ifNull def value = if value = null then def else value
 
     let private redisURI = System.Environment.GetEnvironmentVariable("REDIS_URI") |> ifNull "127.0.0.1:6379"
 
-    let private redisClient = new System.Lazy<ConnectionMultiplexer>(fun _ ->
-        NReJSONSerializer.SerializerProxy <- SystemTextJsonSerializer()
-        ConnectionMultiplexer.Connect(redisURI)
+    let private redisClient = new System.Lazy<IConnectionMultiplexer>(fun _ ->
+        NReJSONSerializer.SerializerProxy <- serializer
+        let multiplexer : IConnectionMultiplexer = ConnectionMultiplexer.Connect(redisURI) 
+        multiplexer
      )
 
     let getRedisDb () = redisClient.Value.GetDatabase()
     type GetDb = unit -> IDatabase
+
+    let getRedisSubscriber () = redisClient.Value.GetSubscriber()
+    type GetSubscriber = unit -> ISubscriber
         
     let setJson (key:string) (value:'TValue) (getDb:GetDb) =
         async {
@@ -78,5 +82,22 @@ module Redis =
     let deleteHash (hash:string) (key:string) (getDb:GetDb) = async {
         do! getDb () |> fun db -> db.HashDeleteAsync (hash, key) |> Async.AwaitTask |> Async.Ignore
         return getDb
+    }
+
+    let publish (key: string) value (getSubscriber: GetSubscriber) =
+        getSubscriber () 
+            |> fun sub -> sub.PublishAsync (key, serializer.Serialize value) |> Async.AwaitTask |> Async.Ignore
+
+
+    let subscribe (key: string) (handler: ('TValue -> unit)) (getSubscriber: GetSubscriber) = async {
+        let handlerAction c (v: RedisValue) = 
+            let value = serializer.Deserialize<'TValue> (RedisResult.Create v)
+            handler value
+
+        let unsubscriber () = getSubscriber () |> fun sub -> sub.UnsubscribeAsync (key, handlerAction, CommandFlags.None) |> Async.AwaitTask 
+
+        do! getSubscriber () |> fun sub -> sub.SubscribeAsync (key, handlerAction, CommandFlags.None) |> Async.AwaitTask 
+
+        return unsubscriber
     }
     

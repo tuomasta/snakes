@@ -40,15 +40,12 @@ type GameHub() =
                         this.Groups.AddToGroupAsync(connectionId, nameOfGame, CancellationToken.None)
                         |> Async.AwaitTask
 
-                    do!
-                        game
-                        |> toDto
-                        |> this.NotifyStateUpdate nameOfGame
-                        |> Async.AwaitTask
+                    do! getRedisSubscriber |> publishGameState (game |> toDto)
                     return true            
                 }
 
             if game.status = GameStatus.Lobby then
+                printf "Player connected, Player:%s, Game:%s" nameOfPlayer nameOfGame
                 return! doAccept ()
             else
                 return false
@@ -90,9 +87,3 @@ type GameHub() =
                 |> Option.bindAsync (fun data -> getRedisDb |> tryGetGame data.GameId |> Option.bindAsync2 (fun g -> (g, data)))
                 |> Async.thenAsync (fun o -> Option.map turnPlayer o |> Option.defaultWith async.Zero)
         }
-
-    member private this.NotifyStateUpdate nameOfGame jsonState : Tasks.Task =
-        this
-            .Clients
-            .Group(nameOfGame)
-            .GameState(jsonState)

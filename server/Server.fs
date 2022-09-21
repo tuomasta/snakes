@@ -3,11 +3,9 @@ module Snakes.App
 open System
 
 open System.IO
-open System.Threading.Tasks
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Cors.Infrastructure
 open Microsoft.AspNetCore.Hosting
-open Microsoft.AspNetCore.Http
 open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
 open Microsoft.Extensions.DependencyInjection
@@ -42,14 +40,11 @@ module Views =
                |> List.ofSeq) ]
         |> layout
 
-
-
 // ---------------------------------
 // Web app
 // ---------------------------------
-
 let indexHandler _ =
-    // TODO this should work async by using a task expression but does not seem to in the way it's documented
+    // TODO check how to make this work in async way
     let gameNames = getRedisDb |> getGameNames |> Async.RunSynchronously
     let view = Views.index gameNames
     htmlView view
@@ -72,7 +67,6 @@ let errorHandler (ex: Exception) (logger: ILogger) =
 // ---------------------------------
 // Config and Main
 // ---------------------------------
-
 let configureCors (_: CorsPolicyBuilder) = ()
 
 let configureApp (app: IApplicationBuilder) =
@@ -82,10 +76,8 @@ let configureApp (app: IApplicationBuilder) =
     (match env.IsDevelopment() with
      | true -> app.UseDeveloperExceptionPage()
      | false -> app.UseGiraffeErrorHandler(errorHandler))
-        //            .UseHttpsRedirection()) -- TODO: consider enabling this, not most likely needed when hosted on cluster
-        .UseCors(
-            configureCors
-        )
+        //.UseHttpsRedirection()) -- TODO: consider enabling this, not most likely needed when hosted on cluster
+        .UseCors(configureCors)
         .UseStaticFiles()
         .UseRouting()
         .UseEndpoints(fun endpoints -> endpoints.MapHub<GameHub>("/gamehub") |> ignore)
@@ -94,9 +86,10 @@ let configureApp (app: IApplicationBuilder) =
 let configureServices (services: IServiceCollection) =
     services.AddCors() |> ignore
     services.AddGiraffe() |> ignore
-    services.AddSignalR() |> ignore
 
-    services.AddHostedService<BackgroundServices.GameService>()
+    services.AddSignalR() |> ignore
+    
+    services.AddHostedService<BackgroundServices.GameUpdateProxyService>()
     |> ignore
 
 let configureLogging (builder: ILoggingBuilder) =

@@ -117,3 +117,12 @@ module Game =
         getDb
             |> deleteJsonElement name $"$.players.{playerId}"
             |> Async.Ignore
+
+    let private gameStateSubscriptionKey = "snake:gamestate"
+    let publishGameState (gameDto:GameDto) getSubscriber = 
+        getSubscriber 
+            |> publish gameStateSubscriptionKey gameDto
+
+    let subscribeGameState (handler: GameDto -> unit) getSubscriber = 
+        getSubscriber 
+            |> subscribe gameStateSubscriptionKey handler
