@@ -76,11 +76,11 @@ let startGame hub =
             | _ -> do! start hub cts.Token |> Async.AwaitTask
 
             match key with
-            | Some System.ConsoleKey.LeftArrow ->
+            | Some System.ConsoleKey.LeftArrow | Some System.ConsoleKey.A ->
                 do!
                     turn TurnDirection.left hub cts.Token
                     |> Async.AwaitTask
-            | Some System.ConsoleKey.RightArrow ->
+            | Some System.ConsoleKey.RightArrow | Some System.ConsoleKey.D ->
                 do!
                     turn TurnDirection.right hub cts.Token
                     |> Async.AwaitTask
@@ -94,14 +94,21 @@ let startGame hub =
 [<EntryPoint>]
 let main _ =
     async {
-        AnsiConsole.Clear()
-        AnsiConsole.WriteLine("Snakes V0.1")
+        let mutable player = ""
+        let mutable game = ""
 
-        let player =
-            AnsiConsole.Ask<string>("Your name please")
+        let init () = 
+            try 
+                AnsiConsole.Clear()
+                AnsiConsole.WriteLine("\nSnakes V0.1")
+                player <- AnsiConsole.Ask<string>("Your name please:\n")
+                game <- AnsiConsole.Ask<string>("Name of the game:\n")
+                true
+            with | _ -> false
 
-        let game =
-            AnsiConsole.Ask<string>("Name of the game")
+        while (init() = false) do
+            printf "\nwaiting for console to attach...\n"
+            do! Task.Delay(1000) |> Async.AwaitTask
 
         AnsiConsole.Clear()
         AnsiConsole.WriteLine("Snakes V0.1")

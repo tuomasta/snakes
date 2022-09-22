@@ -23,6 +23,8 @@ module Redis =
 
     let private redisURI = System.Environment.GetEnvironmentVariable("REDIS_URI") |> ifNull "127.0.0.1:6379"
 
+    printf "USING Redis Uri: %s\n" redisURI
+
     let private redisClient = new System.Lazy<IConnectionMultiplexer>(fun _ ->
         NReJSONSerializer.SerializerProxy <- serializer
         let multiplexer : IConnectionMultiplexer = ConnectionMultiplexer.Connect(redisURI) 

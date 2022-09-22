@@ -45,7 +45,7 @@ type GameHub() =
                 }
 
             if game.status = GameStatus.Lobby then
-                printf "Player connected, Player:%s, Game:%s" nameOfPlayer nameOfGame
+                printf "Player connected, Player:%s, Game:%s\n" nameOfPlayer nameOfGame
                 return! doAccept ()
             else
                 return false

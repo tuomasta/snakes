@@ -4,15 +4,12 @@ WORKDIR /app
 # Copy csproj and restore as distinct layers
 COPY server/*.fsproj server/
 COPY shared/*.fsproj shared/
-COPY tests/*.fsproj tests/
-COPY client/*.fsproj client/
-COPY snakes.sln ./
+COPY game/*.fsproj game/
 
-RUN dotnet restore
+RUN dotnet restore server
     
 # Copy everything else and build
 COPY ./ ./
-RUN dotnet test -c Release
 RUN dotnet publish server/ -c Release -o out
     
 # Build runtime image
