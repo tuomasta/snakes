@@ -1,29 +1,29 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <AssemblyName>snakes.game</AssemblyName>
-  </PropertyGroup>
-
-	<ItemGroup>
-		<PackageReference Include="NReJSON" Version="4.0.*" />
-		<PackageReference Include="FSharp.SystemTextJson" Version="0.19.13" />
-	</ItemGroup>
-	
-  <ItemGroup>
-    <Compile Include="Config.fs" />
-    <Compile Include="GameLogic.fs" />
-	<Compile Include="Utils\Async.fs" />
-	<Compile Include="Utils\Dictionary.fs" />
-	<Compile Include="Utils\Option.fs" />
-	<Compile Include="DataAccess\Redis.fs" />
-    <Compile Include="DataAccess\Game.fs" />
-    
-  </ItemGroup>
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <AssemblyName>snakes.game</AssemblyName>
+    </PropertyGroup>
 
     <ItemGroup>
-	    <ProjectReference Include="..\shared\shared.fsproj" />
+        <PackageReference Include="NReJSON" Version="4.0.*"/>
+        <PackageReference Include="FSharp.SystemTextJson" Version="0.19.13"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Include="Config.fs"/>
+        <Compile Include="GameLogic.fs"/>
+        <Compile Include="Utils\Async.fs"/>
+        <Compile Include="Utils\Dictionary.fs"/>
+        <Compile Include="Utils\Option.fs"/>
+        <Compile Include="DataAccess\Redis.fs"/>
+        <Compile Include="DataAccess\Game.fs"/>
+
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\shared\shared.fsproj"/>
     </ItemGroup>
 
 </Project>

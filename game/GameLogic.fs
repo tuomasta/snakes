@@ -24,9 +24,9 @@ let RotateRight =
 
 let RotateLeft =
     Matrix3x2.CreateRotation(float32 (Math.PI * -0.5))
-    
+
 // TODO OO type domain objects are not a thing in f#, so consider using plain records instead
-type Player (id: string, name: string, head: Vector2, direction: Vector2) =
+type Player(id: string, name: string, head: Vector2, direction: Vector2) =
     member this.id = id
     member this.name = name
     member val score = 0 with get, set
@@ -40,7 +40,7 @@ type Player (id: string, name: string, head: Vector2, direction: Vector2) =
 
     member this.tail = this.body[1..]
     member this.head: Vector2 = this.body.Head
-    
+
     member this.isAlive: bool =
         this.direction <> EmptyDirection
 
@@ -149,17 +149,15 @@ type Game(name: string) =
 
 let toDto (game: Game) : GameDto =
     let mapVector (v: Vector2) = { x = int v.X; y = int v.Y }
-    let mapPlayer (p: Player) : PlayerDto = {
-      name = p.name
-      body = p.body |> List.map mapVector
-      score = p.score
-      isAlive = p.isAlive
-    }
 
-    {
-      name = game.name
+    let mapPlayer (p: Player) : PlayerDto =
+        { name = p.name
+          body = p.body |> List.map mapVector
+          score = p.score
+          isAlive = p.isAlive }
+
+    { name = game.name
       status = game.status
       area = Config.GameArea
       berries = game.berries |> List.map mapVector
-      players = game.players |> List.map mapPlayer
-    }
+      players = game.players |> List.map mapPlayer }

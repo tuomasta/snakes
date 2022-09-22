@@ -30,7 +30,7 @@ type GameService() =
                                 match game.status with
                                 | GameStatus.Running -> this.ProgressGame game
                                 | GameStatus.Ended -> this.RemoveGame game
-                                | _ -> async.Return ()
+                                | _ -> async.Return()
                         })
                     |> Async.Parallel
                     |> Async.Ignore
@@ -43,10 +43,12 @@ type GameService() =
         async {
             game.tick ()
 
-            // TODO: save only the berries, status, player bodies and alive status override player direction changes 
+            // TODO: save only the berries, status, player bodies and alive status override player direction changes
             do! getRedisDb |> saveGame game |> Async.Ignore
 
-            do! getRedisSubscriber |> publishGameState (game |> toDto)
+            do!
+                getRedisSubscriber
+                |> publishGameState (game |> toDto)
         }
 
     member this.RemoveGame(game: Game) : Async<unit> = getRedisDb |> deleteGame game.name

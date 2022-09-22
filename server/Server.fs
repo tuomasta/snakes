@@ -45,7 +45,11 @@ module Views =
 // ---------------------------------
 let indexHandler _ =
     // TODO check how to make this work in async way
-    let gameNames = getRedisDb |> getGameNames |> Async.RunSynchronously
+    let gameNames =
+        getRedisDb
+        |> getGameNames
+        |> Async.RunSynchronously
+
     let view = Views.index gameNames
     htmlView view
 
@@ -77,7 +81,9 @@ let configureApp (app: IApplicationBuilder) =
      | true -> app.UseDeveloperExceptionPage()
      | false -> app.UseGiraffeErrorHandler(errorHandler))
         //.UseHttpsRedirection()) -- TODO: consider enabling this, not most likely needed when hosted on cluster
-        .UseCors(configureCors)
+        .UseCors(
+            configureCors
+        )
         .UseStaticFiles()
         .UseRouting()
         .UseEndpoints(fun endpoints -> endpoints.MapHub<GameHub>("/gamehub") |> ignore)
@@ -88,7 +94,7 @@ let configureServices (services: IServiceCollection) =
     services.AddGiraffe() |> ignore
 
     services.AddSignalR() |> ignore
-    
+
     services.AddHostedService<BackgroundServices.GameUpdateProxyService>()
     |> ignore
 

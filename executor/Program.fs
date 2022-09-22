@@ -11,7 +11,8 @@ let configureLogging (builder: ILoggingBuilder) =
 
 [<EntryPoint>]
 let main args =
-    Host.CreateDefaultBuilder(args)
+    Host
+        .CreateDefaultBuilder(args)
         .ConfigureServices(configureServices)
         .ConfigureLogging(configureLogging)
         .Build()
