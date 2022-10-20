@@ -1,0 +1,117 @@
+# Docker
+# Build a Docker image
+# https://docs.microsoft.com/azure/devops/pipelines/languages/docker
+
+trigger:
+- master
+
+resources:
+- repo: self
+
+variables:
+  tag: '$(Build.BuildId)'
+
+stages:
+- stage: Build
+  displayName: Build image
+  jobs:
+  - job: Build
+    displayName: Build
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - task: Docker@2
+      inputs:
+        containerRegistry: 'DockerHub - Tuomas'
+        repository: 'talustuo/snakes-server'
+        command: 'buildAndPush'
+        Dockerfile: 'server/Dockerfile'
+        buildContext: '.'
+        tags: |
+          $(tag)
+    - task: Docker@2
+      inputs:
+        containerRegistry: 'DockerHub - Tuomas'
+        repository: 'talustuo/snakes-client'
+        command: 'buildAndPush'
+        Dockerfile: 'client/Dockerfile'
+        buildContext: '.'
+        tags: |
+          $(tag)
+    - task: Docker@2
+      inputs:
+        containerRegistry: 'DockerHub - Tuomas'
+        repository: 'talustuo/snakes-executor'
+        command: 'buildAndPush'
+        Dockerfile: 'executor/Dockerfile'
+        buildContext: '.'
+        tags: |
+          $(tag)
+- stage: Plan
+  displayName: Plan
+  jobs:
+    - job: Plan
+      displayName: Runs TF init & plan
+      pool:
+        vmImage: ubuntu-latest
+      variables:
+        - group: TFServicePrincipal
+      steps:
+        - checkout: self
+        - script: |
+            set -e
+            terraform init -backend-config="resource_group_name=$TF_RG_NAME" -backend-config="storage_account_name=$TF_STORAGE_NAME"
+            terraform plan -var ssh_public_key_file=./snakes.pub -out tf.plan
+          env:
+            TF_RG_NAME: tuomas-general
+            TF_STORAGE_NAME: tuomascommonstorage
+            ARM_TENANT_ID: $(TENANT_ID)
+            ARM_SUBSCRIPTION_ID: $(SUBSCIRPTION_ID)
+            ARM_CLIENT_ID: $(PRINCIPAL_ID)
+            ARM_CLIENT_SECRET: $(PRINCIPAL_SECRET)
+          name: RunTerraform
+          displayName: Run terraform plan and init
+        - publish: $(System.DefaultWorkingDirectory)/tf.plan
+          artifact: tf.plan
+        - publish: $(System.DefaultWorkingDirectory)/.terraform
+          artifact: tf
+- stage: Deploy
+# condition: eq(variables['Build.Reason'], 'Manual')
+  displayName: Deploy
+  jobs:
+    - deployment: tfDeployment
+      environment: azure
+      displayName: Runs TF apply
+      pool:
+        vmImage: ubuntu-latest
+      variables:
+        - group: TFServicePrincipal
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - download: current
+              artifact: tf.plan
+            - download: current
+              artifact: tf
+            - script: |
+                set -e
+                mkdir ./.terraform
+                cp -r $(Pipeline.Workspace)/tf.plan/* .
+                cp -r $(Pipeline.Workspace)/tf/* ./.terraform
+              env:
+                ARM_TENANT_ID: $(TENANT_ID)
+                ARM_SUBSCRIPTION_ID: $(SUBSCIRPTION_ID)
+                ARM_CLIENT_ID: $(PRINCIPAL_ID)
+                ARM_CLIENT_SECRET: $(PRINCIPAL_SECRET)
+              name: RunTerraformApply
+              displayName: Run terraform apply
+            - publish: $(System.DefaultWorkingDirectory)
+              artifact: out
+          
+# terraform apply -auto-approve tf.plan
+
+          
+
+
+      

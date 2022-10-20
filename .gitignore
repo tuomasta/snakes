@@ -1,9 +1,12 @@
 .idea
 .vscode
 .vs
+.terraform*
+terraform*
 
 **/bin
 **/obj
 .fake
 
 **/dist
+*.plan
