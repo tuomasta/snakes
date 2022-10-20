@@ -6,40 +6,141 @@ It implements distributed snakes game. Snakes was chosen because implementing th
 The aim is to test out following technologies:
 - F#
 - SignalR
-- Kubernetis, hosting
+- Kubernetis (AKS), hosting
 - Redis, signalr backplane
 - Blazor, client (todo)
-- AKS & Github deployments (todo)
+- Github deployments (todo)
 
 ## BUILD & RUN WITH DOCKER
 
 ### BUILD
-``docker build -f [client|server|executor]/Dockerfile -t talustuo/snakes-[client|server|executor] .``
+````
+docker build -f [client|server|executor]/Dockerfile -t talustuo/snakes-[client|server|executor] .
+````
 
 ### NETWORK
-``docker network create snakes``
+````
+docker network create snakes
+````
 
 ### RUN
 ##### Redis
-``docker run --rm --name redis -p 6379:6379 --network snakes redislabs/redismod``
+````
+docker run --rm --name redis -p 6379:6379 --network snakes redislabs/redismod
+````
 
 ##### Executor
-``docker run --rm --name snakes-executor -e "REDIS_URI=redis:6379" --network snakes talustuo/snakes-executor``
+````
+docker run --rm --name snakes-executor -e "REDIS_URI=redis:6379" --network snakes talustuo/snakes-executor
+````
 
 ##### SERVER
-``docker run --rm --name snakes-server -e "REDIS_URI=redis:6379" -p 5000:80 --network snakes talustuo/snakes-server``
+````
+docker run --rm --name snakes-server -e "REDIS_URI=redis:6379" -p 5000:80 --network snakes talustuo/snakes-server
+````
 
 ##### CLIENT
-``docker run --rm --name snakes-client -it --network snakes -e "SERVER_URI=http://snakes-server:80" talustuo/snakes-client``
+````
+docker run --rm --name snakes-client -it --network snakes -e "SERVER_URI=http://snakes-server:80" talustuo/snakes-client
+````
 
 ## K8S
 
 #### DEPLOY
-``kubectl apply -f .\k8s\redis.yaml``
-
-``kubectl apply -f .\k8s\snakes-deployment.yaml``
+````
+kubectl apply -f .\k8s\redis.yaml
+kubectl apply -f .\k8s\snakes-deployment.yaml
+````
 
 #### ATTACH TO CLIENT RUNNING IN K8S
-``kubectl get pods``
+````
+kubectl get pods
+kubectl attach -it client-dpt-<xxx>
+````
 
-``kubectl attach -it client-dpt-<xxx>``
+## AKS INFRA
+
+### AZ CLI
+#### CREATE RG
+````
+RG_NAME=snakes
+RG_ID=$(az group create --location northeurope --name $RG_NAME -o tsv --query id)
+````
+
+#### CREATE CLUSTER
+````
+az aks create -n aks-snakes -g $RG_NAME
+--node-count 1
+--node-vm-size Standard_A2_v2
+--load-balancer-sku standard
+--ssh-key-value ./snakes.pub
+--enable-msi-auth-for-monitoring
+--enable-addons monitoring
+--enable-managed-identity
+--output none
+
+az aks get-credentials -n aks-snakes -g $RG_NAME --admin
+````
+
+#### INSTALL INGRESS
+````
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+helm repo update
+
+helm install -n ingress ingress-nginx ingress-nginx/ingress-nginx  --set controller.service.annotations."service\.beta\.kubernetes\.io/azure-load-balancer-health-probe-request-path"=/healthz
+````
+
+#### SET DNS NAME FOR INGRESS
+````
+DNS_LABEL=snakes
+
+helm upgrade -n ingress ingress-nginx ingress-nginx/ingress-nginx --set controller.service.annotations."service\.beta\.kubernetes\.io/azure-dns-label-name"=$DNS_LABEL
+
+curl http://snakes.northeurope.cloudapp.azure.com/api
+````
+
+### TERRAFORM
+#### CREATE PRINCIPAL TO AUTH TERRAFORM
+````
+SERVICE_PRINCIPAL=$(az ad sp create-for-rbac --skip-assignment --name terraform-ci -o json)
+PRINCIPAL_ID=$(echo $SERVICE_PRINCIPAL | jq -r '.appId')
+PRINCIPAL_SECRET=$(echo $SERVICE_PRINCIPAL | jq -r '.password')
+
+# Make service principal contributor. This needs to be in subscription scope in order to create resource groups
+
+HAS_ROLE=$(az role assignment list --assignee $PRINCIPAL_ID --scope "/subscriptions/$SUBSCIRPTION_ID" --role Contributor --query 'length([].id)' | grep -o '[0-9]*')
+
+test $HAS_ROLE -lt 1 && az role assignment create --assignee $PRINCIPAL_ID --scope "/subscriptions/$SUBSCIRPTION_ID" --role Contributor
+````
+
+#### CREATE AND EXECUTE THE PLAN
+````
+terraform init
+
+TF_PARAMS="-var subscription_id=$SUBSCIRPTION_ID -var tenant_id=$TENANT_ID -var principal_id=$PRINCIPAL_ID -var principal_secret=$PRINCIPAL_SECRET -var ssh_public_key_file=./snakes.pub"
+
+terraform plan $TF_PARAMS
+
+terraform apply $TF_PARAMS
+````
+
+#### CLEAN UP
+````
+# init will download providers etc.
+terraform plan -destroy $TF_PARAMS
+terraform destroy $TF_PARAMS
+````
+<!-- 
+##### ASSIGN ROLE IF IT DOES NOT EXITS
+````</br>
+``test $HAS_ROLE -lt 1 && az role assignment create --assignee $AKS_APP_ID --scope $RG_ID --role Contributor``
+-->
+
+## DEPLOY TO AKS
+````
+az aks get-credentials -n snakes-cluster -g snakes
+
+kubectl apply -f .\k8s\redis.yaml
+kubectl apply -f .\k8s\snakes-deployment.yaml
+curl http://snakes.northeurope.cloudapp.azure.com/api
+````

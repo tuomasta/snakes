@@ -57,13 +57,12 @@ spec:
           service:
             name: snakes-server-clusterip-srv
             port:
-              number: 80
+              name: http
       - path: /gamehub
         pathType: Prefix
         backend:
           service:
             name: snakes-server-clusterip-srv
-            servicePort: 
             port:
               name: http
 ---
