@@ -115,6 +115,12 @@ TF_RG_NAME=tuomas-general
 TF_STORAGE_NAME=tuomascommonstorage
 ```
 
+#### UPDATING PROVIDERS
+If you update providers then you need to update the terraform lock file used in CI pipelines. This can be done with following command. Read more about the from [here](https://developer.hashicorp.com/terraform/tutorials/automation/automate-terraform#plan-and-apply-on-different-machines) why this is needed.
+```
+terraform init -upgrade -backend-config="resource_group_name=$TF_RG_NAME" -backend-config="storage_account_name=$TF_STORAGE_NAME"
+```
+
 #### CREATE BLOB STORE FOR REMOTE TF STATE
 ```
 az storage account create -g $TF_RG_NAME -n $TF_STORAGE_NAME --sku Standard_LRS

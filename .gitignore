@@ -3,6 +3,7 @@
 .vs
 .terraform*
 terraform*
+!.terraform.lock.hcl
 
 **/bin
 **/obj

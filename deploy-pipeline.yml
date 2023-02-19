@@ -1,0 +1,51 @@
+trigger:
+- 'Manual'
+
+resources:
+  pipelines:
+    - pipeline: BuildAndPlan
+      source: snakes.BuildAndPlan
+      branch: master
+      trigger: none
+
+variables:
+  tag: '$(Build.BuildId)'
+
+pool:
+  vmImage: ubuntu-latest
+
+jobs:
+- deployment: tfDeployment
+  environment: azure
+  displayName: Deploy to azure
+  variables:
+    - group: TFServicePrincipal
+  strategy:
+    runOnce:
+      deploy:
+        steps:
+        - checkout: none
+        - download: BuildAndPlan
+          artifact: tf
+        - script: |
+            set -e
+            echo "Hello, world!"
+            ls -al $(Pipeline.Workspace)
+            ls -al $(Pipeline.Workspace)/BuildAndPlan/tf
+            tar -xzf $(Pipeline.Workspace)/BuildAndPlan/tf/tf-artifact.tar.gz -C . -P
+            ls -al .
+            terraform apply -auto-approve tf.plan
+          env:
+            ARM_TENANT_ID: $(TENANT_ID)
+            ARM_SUBSCRIPTION_ID: $(SUBSCIRPTION_ID)
+            ARM_CLIENT_ID: $(PRINCIPAL_ID)
+            ARM_CLIENT_SECRET: $(PRINCIPAL_SECRET)
+          name: RunTerraformApply
+          displayName: Run terraform apply
+        - publish: $(System.DefaultWorkingDirectory)
+          artifact: out
+
+          
+
+
+      
