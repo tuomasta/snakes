@@ -64,7 +64,7 @@ stages:
             set -e
             terraform init -lockfile=readonly -backend-config="resource_group_name=$TF_RG_NAME" -backend-config="storage_account_name=$TF_STORAGE_NAME"
             terraform plan -var ssh_public_key_file=./snakes.pub -out tf.plan
-            tar -czf tf-artifact.tar.gz .terraform tf.plan .terraform.lock.hcl
+            tar -czf tf-artifact.tar.gz .terraform tf.plan .terraform.lock.hcl snakes.pub
           env:
             TF_RG_NAME: tuomas-general
             TF_STORAGE_NAME: tuomascommonstorage
@@ -76,7 +76,6 @@ stages:
           displayName: Run terraform plan and init
         - publish: $(System.DefaultWorkingDirectory)/tf-artifact.tar.gz
           artifact: tf
-# terraform apply -auto-approve tf.plan
 
           
 

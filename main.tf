@@ -17,6 +17,7 @@ terraform {
 
 variable "ssh_public_key_file" {
     type = string
+    default = "./snakes.pub"
 }
 
 

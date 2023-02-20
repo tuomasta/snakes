@@ -1,0 +1,39 @@
+trigger:
+- 'Manual'
+
+resources:
+- repo: self
+
+pool:
+  vmImage: ubuntu-latest
+
+jobs:
+- deployment: tfDestroy
+  environment: azure
+  displayName: Cleanup azure resources
+  variables:
+    - group: TFServicePrincipal
+  strategy:
+    runOnce:
+      deploy:
+        steps:
+        - checkout: self
+          fetchDepth: 1
+        - script: |
+            set -e
+            terraform init -lockfile=readonly -backend-config="resource_group_name=$TF_RG_NAME" -backend-config="storage_account_name=$TF_STORAGE_NAME"
+            terraform destroy -auto-approve -input=false
+          env:
+            TF_RG_NAME: tuomas-general
+            TF_STORAGE_NAME: tuomascommonstorage
+            ARM_TENANT_ID: $(TENANT_ID)
+            ARM_SUBSCRIPTION_ID: $(SUBSCIRPTION_ID)
+            ARM_CLIENT_ID: $(PRINCIPAL_ID)
+            ARM_CLIENT_SECRET: $(PRINCIPAL_SECRET)
+          name: RunTerraformDestroy
+          displayName: Run terraform destroy
+
+          
+
+
+      
