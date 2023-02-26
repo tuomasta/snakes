@@ -1,0 +1,26 @@
+{{- if .Values.client.deploy  }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: snakes-client-dpt
+  namespace: {{ .Release.Name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: snakes-client-pod
+  template:
+    metadata:
+      labels:
+        app: snakes-client-pod
+    spec:
+      containers:
+      - name: snakes-client
+        image: talustuo/snakes-client:{{ .Values.tag }}
+        imagePullPolicy: Always
+        tty: true
+        stdin: true
+        env:
+        - name: SERVER_URI
+          value: http://snakes-server-clusterip-srv:80
+{{- end }}

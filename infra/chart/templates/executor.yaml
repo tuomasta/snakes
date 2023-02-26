@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: snakes-executor-dpt
+  namespace: {{ .Release.Name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: snakes-executor-pod
+  template:
+    metadata:
+      labels:
+        app: snakes-executor-pod
+    spec:
+      containers:
+      - name: executor
+        image: {{ .Values.registry }}/snakes-executor:{{ .Values.tag }}
+        imagePullPolicy: Always
+        env:
+        - name: REDIS_URI
+          value: {{ .Values.redis.serviceName }}:{{ .Values.redis.port }}

@@ -1,7 +1,19 @@
+{{- if .Values.redis.pwd  }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysecret
+  namespace: {{ .Release.Name }}
+type: Opaque
+data:
+  password: {{ .Values.redis.pwd }}
+{{- end}}
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: redis
+  namespace: {{ .Release.Name }}
 spec:
   replicas: 1
   selector:
@@ -15,7 +27,6 @@ spec:
       containers:
       - name: redis
         image: redislabs/redismod
-#        args: ["--requirepass", "$(REDIS_PASS)"]
         ports:
         - containerPort: 6379
         resources:
@@ -25,38 +36,46 @@ spec:
           limits:
             cpu: 1000m
             memory: 500Mi
+        {{- if .Values.redis.pwd  }}          
+        args: ["--requirepass", {{ .Values.redis.pwd }}]
+        {{- end }}
         env:
         - name: MASTER
           value: "true"
-        # - name: REDIS_PASS
-        #   valueFrom:
-        #     secretKeyRef:
-        #       name: redis
-        #       key: REDIS_PASS
+        {{- if .Values.redis.pwd  }}  
+        - name: REDIS_PASS
+          valueFrom:
+            secretKeyRef:
+              name: redis
+              key: REDIS_PASS
+        {{- end }}
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: redis-clusterip-srv
+  name: {{ .Values.redis.serviceName }}
+  namespace: {{ .Release.Name }}
 spec:
   type: ClusterIP
   selector:
     app: redis-pod
   ports:
   - protocol: TCP
-    port: 6379
+    port: {{ .Values.redis.port }}
     targetPort: 6379
 ---
-# FOR LOCAL USAGE
+{{- if .Values.redis.loadbalancer  }}
 apiVersion: v1
 kind: Service
 metadata:
   name: redis-loadbalancer-srv
+  namespace: {{ .Release.Name }}
 spec:
   ports:
-  - port: 6379
+  - port: {{ .Values.redis.port }}
     protocol: TCP
-    targetPort: 6379
+    targetPort: {{ .Values.redis.port }}
   selector:
     app: redis-pod
   type: LoadBalancer
+{{- end}}
